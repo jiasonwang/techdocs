@@ -1,0 +1,2 @@
+## android动态加载之认识框架
+了解android动态加载的过程，首先需要对android的部分框架进行了解，以下对Android的Activity的生命周期进行讲解，然后看如何hook这个过程的细节。
