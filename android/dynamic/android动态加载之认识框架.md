@@ -41,7 +41,7 @@ if (mResumedActivity != null) {
  ###Pause当前act，并启动另一个act的进程（如果不存在）
 下面这种时序图是基于之前那张的，也就是看是pause当前的act：
 ![执行pause](https://raw.githubusercontent.com/jiasonwang/techdocs/master/android/dynamic/raw/activity%E5%90%AF%E5%8A%A8%E6%97%B6%E5%BA%8F%E5%9B%BE2.png)
-![启动新的app]()
+![启动新的app](https://raw.githubusercontent.com/jiasonwang/techdocs/master/android/dynamic/raw/activity%E5%90%AF%E5%8A%A8%E6%97%B6%E5%BA%8F%E5%9B%BE3.png)
  > 7.ApplicationThread.schedulePauseActivity,ams的进程通过这个iBinder，调用schedulePauseActivity方法，这样在app一端，就会收到对应的同步方法，这个方法会发送消息给主线程处理。
  > 8.ActivityThread.sendMessage,这个就是发送消息的方法，它将消息塞到mH对应的主线程中。
  > 9.ActivityThread.handlePauseActivity，接下去的操作就比较简单了，那就是通过Instrumentation分别调用“保存当前act状体”的方法，以及pause方法，方法名见流程图。这些都处理完成后，需要告诉AMS，app已经处理完成了，接着进行一下步的处理。
