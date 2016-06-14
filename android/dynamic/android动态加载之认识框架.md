@@ -75,7 +75,7 @@ Process.ProcessStartResult startResult = Process.start(entryPoint,
                     app.info.dataDir, entryPointArgs);
 ```
 上面的代码可以看出，若entrPoint为空，那么就默认启动系统的ActivityThread类的main方法，这样，目标act所在的进程就开始运行了。
-![创建application]()
+![创建application](https://raw.githubusercontent.com/jiasonwang/techdocs/master/android/dynamic/raw/activity%E5%90%AF%E5%8A%A8%E6%97%B6%E5%BA%8F%E5%9B%BE4.png)
 > 15.ActivityThread.main,该方法是java的进程入口点，主要是生成ActivityThread单实例，调用attach，然后进入Looper循环。
 >16.ActivityManagerNative.attachApplication,ActivityManagerService.attachApplicationLocked该方法相当于告诉AMS，进程已经启动完毕了，需要注册到AMS中。在AMS一侧接受到该调用，做一些例行公事,比如找该app要运行的包信息等，然后回调ApplicationThread(这个对象由app端传过来).bindApplication.
 > 17.ActivityThread.ApplicationThread.bindApplication,根据从AMS传递管来的包信息，启动里头的Application，通过 sendMessage(H.BIND_APPLICATION, data);来异步执行Application的创建。
@@ -103,3 +103,5 @@ else{
 通过LoadedApk构建一个Application对象：
   Application app = data.info.makeApplication(data.restrictedBackupMode, null);
 若我们没有设置特定的application，那么就会默认构造Application对象。而且，顺带会调用Application.attatch(Context)，传入的context就是ContextImpl实例。这个调用结束后，就开始进行Application生命周期的调用，通过Instrumentation的callApplicationOnCreate调用app.onCreate()。
+>19.ActivityManagerService.attachApplicationLocked,ActivityStackSupervisor.realStartActivityLocked,ApplicationThread
+.scheduleLaunchActivity,
