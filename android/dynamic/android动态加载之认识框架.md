@@ -104,4 +104,6 @@ else{
   Application app = data.info.makeApplication(data.restrictedBackupMode, null);
 若我们没有设置特定的application，那么就会默认构造Application对象。而且，顺带会调用Application.attatch(Context)，传入的context就是ContextImpl实例。这个调用结束后，就开始进行Application生命周期的调用，通过Instrumentation的callApplicationOnCreate调用app.onCreate()。
 >19.ActivityManagerService.attachApplicationLocked,ActivityStackSupervisor.realStartActivityLocked,ApplicationThread
-.scheduleLaunchActivity,
+.scheduleLaunchActivity.当application创建的消息发送出去以后，就该开始创建Activity并且调用它的生命周期了。在ApplicationThread（一个binder）的scheduleLaunchActivity发送一条LAUNCH_ACTIVITY消息给主线程，这样职责就转到了ActivityThread里了。在H类的消息处理里处理该消息。
+![创建application]()
+> 20.ActivityThread.handleLaunchActivity,ActivityThread.performLaunchActivity,Instrumentation.newActivity.
