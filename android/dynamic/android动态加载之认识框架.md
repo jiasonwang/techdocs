@@ -37,7 +37,7 @@ if (mResumedActivity != null) {
 ```
 > 6.ActivityStack.startPausingLocked，置空mResumedActivity，设置当前mPausingActivity值，当然还有一些其他pause相关的辅助变量,然后调用prev.app.thread.schedulePauseActivity，其中thread就是IApplicationThread 。注意，底层ApplicationThreadProxy中实现该方法是FLAG_ONEWAY，也就是非阻塞调用，马上返回。紧接着会会发送一个PAUSE_TIMEOUT_MSG消息给“PAUSE_TIMEOUT=500”后的自己。若这条消息没有被正常删掉，那么500ms后系统将调用completePauseLocked（true）来强制设置为pause状态。
 
- ###Pause当前act，并启动另一个act的进程（如果不存在）
+ ### Pause当前act，并启动另一个act的进程（如果不存在）
 下面这种时序图是基于之前那张的，也就是看是pause当前的act：
 ![执行pause](https://raw.githubusercontent.com/jiasonwang/techdocs/master/android/dynamic/raw/activity%E5%90%AF%E5%8A%A8%E6%97%B6%E5%BA%8F%E5%9B%BE2.png)
 ![启动新的app](https://raw.githubusercontent.com/jiasonwang/techdocs/master/android/dynamic/raw/activity%E5%90%AF%E5%8A%A8%E6%97%B6%E5%BA%8F%E5%9B%BE3.png)
@@ -75,6 +75,7 @@ Process.ProcessStartResult startResult = Process.start(entryPoint,
                     app.info.dataDir, entryPointArgs);
 ```
 上面的代码可以看出，若entrPoint为空，那么就默认启动系统的ActivityThread类的main方法，这样，目标act所在的进程就开始运行了。
+### 开始启动activity
 ![创建application](https://raw.githubusercontent.com/jiasonwang/techdocs/master/android/dynamic/raw/activity%E5%90%AF%E5%8A%A8%E6%97%B6%E5%BA%8F%E5%9B%BE4.png)
 > 15.ActivityThread.main,该方法是java的进程入口点，主要是生成ActivityThread单实例，调用attach，然后进入Looper循环。
 >16.ActivityManagerNative.attachApplication,ActivityManagerService.attachApplicationLocked该方法相当于告诉AMS，进程已经启动完毕了，需要注册到AMS中。在AMS一侧接受到该调用，做一些例行公事,比如找该app要运行的包信息等，然后回调ApplicationThread(这个对象由app端传过来).bindApplication.
@@ -105,5 +106,22 @@ else{
 若我们没有设置特定的application，那么就会默认构造Application对象。而且，顺带会调用Application.attatch(Context)，传入的context就是ContextImpl实例。这个调用结束后，就开始进行Application生命周期的调用，通过Instrumentation的callApplicationOnCreate调用app.onCreate()。
 >19.ActivityManagerService.attachApplicationLocked,ActivityStackSupervisor.realStartActivityLocked,ApplicationThread
 .scheduleLaunchActivity.当application创建的消息发送出去以后，就该开始创建Activity并且调用它的生命周期了。在ApplicationThread（一个binder）的scheduleLaunchActivity发送一条LAUNCH_ACTIVITY消息给主线程，这样职责就转到了ActivityThread里了。在H类的消息处理里处理该消息。
-![创建application]()
-> 20.ActivityThread.handleLaunchActivity,ActivityThread.performLaunchActivity,Instrumentation.newActivity.通过handleLaunchActivity这个方法名字就可以看出来，接下去就是要开启act的过程，无非就是创建一个act实例，然后调用onCreate，onStart，当然中间可能会根据情况调用onRestoreInstanceState这个方法将上次存储的信息重新检出。这里比较重要的一点是，创建act的实例是委托给Instrumentation的，这个对于由我们控制act的生成起到了很好的作用。接着，直接调用act的attach方法，将Context注入进去，在attch方法中需要根据Policy来创建Window对象，在通常的手机设备，就是PhoneWindow,个人理解它构造了一层抽象，使得Act不需要关心是跑在phone上还是平板上。
+![创建application](https://raw.githubusercontent.com/jiasonwang/techdocs/master/android/dynamic/raw/activity%E5%90%AF%E5%8A%A8%E6%97%B6%E5%BA%8F%E5%9B%BE5.png)
+> 20.ActivityThread.handleLaunchActivity,ActivityThread.performLaunchActivity,Instrumentation.newActivity.通过handleLaunchActivity这个方法名字就可以看出来，接下去就是要开启act的过程，无非就是创建一个act实例，然后调用onCreate，onStart，当然中间可能会根据情况调用onRestoreInstanceState这个方法将上次存储的信息重新检出。这里比较重要的一点是，创建act的实例是委托给Instrumentation的，这个对于由我们控制act的生成起到了很好的作用。接着，直接调用act的attach方法，将Context注入进去，在attch方法中需要根据Policy来创建Window对象，在通常的手机设备上，就是PhoneWindow,个人理解它构造了一层抽象，使得Act不需要关心是跑在phone上还是平板上。根据上面的构造过程，排在onCreate前面调用的有attatch方法和setTheme方法。调用onCreate还是通过Instrumentation来间接调用，接着就进行onStart的调用，只想说，说这些有什么用呢？无非是证明了act的生命周期的调用不是异步的，无论把哪个耗时操作放在这里的回调中，都无法避免ANR的发生。
+> 21.ActivityThread.handleResumeActivity，ActivityThread.performResumeActivity,Activity.performResume,Instrumentation.callActivityOnResume,Activity.onResume.
+在handleResumeActivity方法中，除了要调用act的onResume以外，就需要开始正在操作显示相关的动作了，也就是说，当一个act刚起来的时候，到了resume方法被调用，其实view还没attatch到windowservice上去，虽然app端的view已经构造出来了，还差真正把它显示出来：
+```java
+                View decor = r.window.getDecorView();
+                decor.setVisibility(View.INVISIBLE);
+                ViewManager wm = a.getWindowManager();
+                WindowManager.LayoutParams l = r.window.getAttributes();
+                a.mDecor = decor;
+                l.type = WindowManager.LayoutParams.TYPE_BASE_APPLICATION;
+                l.softInputMode |= forwardBit;
+                if (a.mVisibleFromClient) {
+                    a.mWindowAdded = true;
+                    wm.addView(decor, l);
+                }
+
+```
+其中decor就是act的rootview了，具体的视图系统的工作这里就不详细讲了。把视图添加到系统服务后，还需要通知到ActivityManagerService.activityPaused，这样整个过程就告一段落了。
