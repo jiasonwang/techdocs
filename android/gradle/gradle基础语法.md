@@ -306,9 +306,9 @@ task之间是可以有关系的，下面讨论用法：
 		from 'images'
 		into 'build'
 	}
-上面copyTask的意思就是拷贝images目录的内容到build目录中去，当时目录本身不拷贝。
+上面copyTask的意思就是拷贝images目录的内容到build目录中去。
 ###定制拷贝任务
-有时候拷贝的目标是特定扩展的文件，或者命名有规律的文件。Gradle中，可以使用通配符来实现拷贝文件的过滤，结合from，into，include，exclude等一起作用，称为CopySpec，下面的task只拷贝以".jpeg"结尾的文件：
+有时候拷贝的目标是特定扩展的文件，或者命名有规律的文件。Gradle中，可以使用通配符来实现拷贝文件的过滤，结合from，into，include，exclude等一起作用，称为CopySpec，下面的task只拷贝以".jpg"结尾的文件：
 	
 	task copyJpegs(type: Copy) {
     from 'images'
@@ -372,7 +372,7 @@ task之间是可以有关系的，下面讨论用法：
 	1.创建gradle.properties文件，然后在里面添加
 	    greeting = "Hello from a properties file"
 	2.在运行前，直接添加在命令行上:
-	    gradle -Pgreeting = "Hello from a properties file" pG
+	    gradle -Pgreeting = "Hello from a properties file"
 当上面两种情况同时出现时，命令行的定义将覆盖文件中的定义。
 <br>还有一种扩展属性的方法，如下:
 	
@@ -438,7 +438,7 @@ no logging options|	LIFECYCLE and higher
 -d or --debug	|DEBUG and higher (that is, all log messages)
 运行出错时，添加-s or --stacktrace，或者 -S or --full-stacktrace来跟踪错误异常。
 ###输出日志
-正常情况下，println的输出定向为标准输出，等级为QUIET。Gradle也提供了logger变量，来定制输出日志的等级：
+正常情况下，println的输出定向为标准输出，等级为QUIET。Gradle也提供了logger变量，来定制输出日志的等级(builder.gradle文件中)：
 
 	logger.quiet('An info log message which is always logged.')
 	logger.error('An error log message.')
